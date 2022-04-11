@@ -6,11 +6,11 @@ enum class kGateType { kXOR, kAND, kXNOR };
 struct Literal;
 
 struct GateNode {
-  kGateType type;
-  GateNode(Literal &input_1, Literal &input_2)
-      : input1(std::make_shared(input_1)), input2(std::make_shared(input_2)) {}
-  shared_ptr<Literal> input1;
-  shared_ptr<Literal> input2;
+  kGateType g_type;
+  GateNode(Literal *input_1, Literal *input_2, kGateType t)
+      : input1(input_1), input2(input_2), g_type(t) {}
+  Literal *input1;
+  Literal *input2;
   string get_expr();
 };
 
@@ -38,6 +38,18 @@ struct Integer {
       literals[i].name = state_name + '_' + to_string(i);
     }
   }
+  Integer getSelfAddOne() {
+    Integer res(*this);
+    Literal t;
+    t.name = "true";
+    for (int i = 0; i < var_num; i++) {
+      GateNode g_xor(&t, &res.literals[i], kGateType::kXOR);
+      GateNode g_and(&t, &res.literals[i], kGateType::kAND);
+      res.literals[i].name = g_xor.get_expr();
+      t.name = g_and.get_expr();
+    }
+    return res;
+  }
   vector<Literal> literals;
   int var_num;
 };
@@ -46,11 +58,44 @@ struct Constraint {
     bool pre = false;
     string res = "";
     for (int i = 0; i < a.var_num; i++) {
-      if (pre) {
-        res = " AND " + ();
+      GateNode g = GateNode(&a.literals[i], &b.literals[i], kGateType::kXNOR);
+      string expr = g.get_expr();
+      if (!pre) {
+        res += expr;
+        pre = true;
+
+      } else {
+        res += " AND " + expr;
       }
     }
+    return res;
   }
+
+  string neq_cons(Integer &a, Integer &b) {
+    string res = eq_cons(a, b);
+    res = "NOR" + res;
+    return res;
+  }
+
+  string le_cons(Integer &a, Integer &b) {
+    bool pre = false;
+    string res = "";
+    string pre_cons = "";
+    for (int i = 0; i < a.var_num; i++) {
+      GateNode g = GateNode(&a.literals[i], &b.literals[i], kGateType::kXNOR);
+      string expr = g.get_expr();
+      if (!pre) {
+        res += expr;
+        pre = true;
+
+      } else {
+        res += " AND " + expr;
+      }
+    }
+    return res;
+  }
+
+  vector<string> all_clauses;
 };
 struct Coord {
   string state_name;
