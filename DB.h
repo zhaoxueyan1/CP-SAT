@@ -2,32 +2,7 @@
 
 using namespace std;
 
-enum class kGateType { kXOR, kAND, kXNOR };
-struct Literal;
-
-struct GateNode {
-  kGateType g_type;
-  GateNode(Literal *input_1, Literal *input_2, kGateType t)
-      : input1(input_1), input2(input_2), g_type(t) {}
-  Literal *input1;
-  Literal *input2;
-  string get_expr();
-};
-
-struct Literal {
-  bool isTmp = false;
-  string name;
-  Literal() {}
-  Literal(shared_ptr<GateNode> s_gate) : source_gate(s_gate) {}
-  shared_ptr<GateNode> source_gate;
-  string get_expr() {
-    if (isTmp) {
-      return source_gate->get_expr();
-    } else {
-      return name;
-    }
-  }
-};
+enum class kState { kPositive, kNegetive, kZero };
 
 struct Integer {
   string state_name;

@@ -13,7 +13,7 @@ string GateNode::get_expr() {
   case kGateType::kAND: {
     string s1 = input1->get_expr();
     string s2 = input2->get_expr();
-    return "( " + s1 + " OR " + s2 + " )";
+    return "( " + s1 + " AND " + s2 + " )";
     break;
   }
   case kGateType::kXNOR: {
