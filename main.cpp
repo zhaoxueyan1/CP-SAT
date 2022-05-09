@@ -30,7 +30,7 @@ struct AndClause {
 struct OrClause {
   bool isOne = false;
   std::set<Literal> orLiterals;
-  void addClause(OrClause &b) {
+  void addClause(const OrClause &b) {
     if (isOne || b.isOne) {
       isOne = true;
       return;
@@ -52,17 +52,17 @@ struct OrClause {
 
 struct CNF {
   std::vector<OrClause> mulOfClause;
-  void mulCaluse(OrClause &b) { mulOfClause.push_back(b); }
-  void mulCaluse(CNF &b) {
+  void mulClause(const OrClause &b) { mulOfClause.push_back(b); }
+  void mulClause(const CNF &b) {
     mulOfClause.insert(mulOfClause.end(), b.mulOfClause.begin(),
                        b.mulOfClause.end());
   }
-  void addClause(OrClause &b) {
+  void addClause(const OrClause &b) {
     for (auto &clause : mulOfClause) {
       clause.addClause(b);
     }
   }
-  void addClause(CNF &b) {
+  void addClause(const CNF &b) {
     std::vector<OrClause> res;
     for (auto &clause : b.mulOfClause) {
       CNF t;
@@ -106,7 +106,7 @@ std::set<int> valid_list;
 int Length;
 int n;
 int k;
-
+namespace SOPSolve {
 AndClause numberToAndClause(int number, int literal_start) {
   AndClause res;
   for (int i = 0; i < Length; i++) {
@@ -172,7 +172,78 @@ SOP solve(int n) {
     SOP s = getKthSop(k);
   }
 }
+}; // namespace SOPSolve
+namespace CNFSolve {
 
+CNF numberToOrClause(int number, int literal_start) {
+  CNF res;
+  for (int i = 0; i < Length; i++) {
+    OrClause c;
+    Literal l;
+    l.idx = literal_start + i;
+    l.state = (1 << i) & number ? 1 : 0;
+    c.orLiterals.insert(l);
+    res.mulClause(c);
+  }
+  return res;
+}
+
+CNF getBlockConstraint(const Step &step) {
+  CNF res;
+  for (auto v : valid_list) {
+    res.addClause(numberToOrClause(v, step.startID));
+  }
+  return res;
+}
+
+CNF getTransConstraint(const Step &step_a, const Step &step_b) {
+  CNF res;
+  int dx[] = {0, 1, 0, -1};
+  int dy[] = {1, 0, -1, 0};
+  for (auto v : valid_list) {
+    int xx = v % n;
+    int yy = v / n;
+    for (int i = 0; i < 4; i++) {
+      int n_xx = xx + dx[i];
+      int n_yy = yy + dy[i];
+      int n_v = n_yy * n + n_xx;
+      if (0 <= n_xx && n_xx < n && 0 <= n_yy && n_yy < n &&
+          valid_list.count(n_v)) {
+        CNF a = numberToOrClause(v, step_a.startID);
+        CNF b = numberToOrClause(n_v, step_b.startID);
+        a.addClause(b);
+        res.addClause(a);
+      }
+    }
+  }
+  return res;
+}
+
+CNF getKthCNF(int k) {
+  std::vector<Step> step_list(k);
+  for (int i = 0; i < k; i++) {
+    step_list[i].startID = i * Length;
+    step_list[i].endID = (i + 1) * Length - 1;
+  }
+  CNF res_1 = getBlockConstraint(step_list[0]);
+  for (int i = 1; i < k; i++) {
+    res_1.mulClause(getBlockConstraint(step_list[i]));
+  }
+  CNF res_2 = getTransConstraint(step_list[0], step_list[1]);
+  for (int i = 1; i < k - 1; i++) {
+    res_2.mulClause(getTransConstraint(step_list[i], step_list[i + 1]));
+  }
+  res_1.mulClause(res_2);
+}
+
+void solve(int n) {
+  k = 2 * (n - 1);
+  while (k < n * n) {
+    CNF s = getKthCNF(k);
+  }
+}
+
+}; // namespace CNFSolve
 int main() {
   std::string file_name = "./bench/1.in";
   freopen(file_name.c_str(), "r", stdin);
@@ -188,6 +259,6 @@ int main() {
   while (Length < n) {
     Length <<= 1;
   }
-  solve(n);
+  SOPSolve::solve(n);
   return 0;
 }
