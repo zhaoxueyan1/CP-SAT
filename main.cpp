@@ -58,11 +58,17 @@ struct CNF {
                        b.mulOfClause.end());
   }
   void addClause(const OrClause &b) {
+    if (mulOfClause.empty()) {
+      mulOfClause.push_back(b);
+    }
     for (auto &clause : mulOfClause) {
       clause.addClause(b);
     }
   }
   void addClause(const CNF &b) {
+    if (mulOfClause.empty()) {
+      mulOfClause = b.mulOfClause;
+    }
     std::vector<OrClause> res;
     for (auto &clause : b.mulOfClause) {
       CNF t;
@@ -156,6 +162,7 @@ SOP getKthSop(int k) {
     step_list[i].endID = (i + 1) * Length - 1;
   }
   SOP res_1 = getBlockConstraint(step_list[0]);
+  // printf("%d\n", res_1.sumOfClause.size());
   for (int i = 1; i < k; i++) {
     res_1.mulClause(getBlockConstraint(step_list[i]));
   }
@@ -170,8 +177,21 @@ SOP solve(int n) {
   k = 2 * (n - 1);
   while (k < n * n) {
     SOP s = getKthSop(k);
+    int i = 0;
+    for (auto &vec : s.sumOfClause) {
+      int j = 0;
+      for (auto &l : vec.andLiterals) {
+        if (l.state == 0) {
+          printf("not ");
+        }
+        printf("x%d %s", l.idx,
+               (j++) == vec.andLiterals.size() - 1 ? ")" : "or ");
+      }
+      printf("%s", (i++) == s.sumOfClause.size() - 1 ? "\n" : "and ");
+    }
   }
 }
+
 }; // namespace SOPSolve
 namespace CNFSolve {
 
@@ -240,6 +260,18 @@ void solve(int n) {
   k = 2 * (n - 1);
   while (k < n * n) {
     CNF s = getKthCNF(k);
+    int i = 0;
+    for (auto &vec : s.mulOfClause) {
+      int j = 0;
+      for (auto &l : vec.orLiterals) {
+        if (l.state == 0) {
+          printf("not ");
+        }
+        printf("x%d %s", l.idx,
+               (j++) == vec.orLiterals.size() - 1 ? ")" : "or ");
+      }
+      printf("%s", (i++) == s.mulOfClause.size() - 1 ? "\n" : "and ");
+    }
   }
 }
 
@@ -251,13 +283,16 @@ int main() {
   getchar();
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n; ++j) {
-      block_map[i][j] = getchar();
+      block_map[i][j] = getchar() - '0';
+      if (block_map[i][j] == 0) {
+        valid_list.insert(i * n + j);
+      }
     }
     getchar();
   }
   Length = 1;
-  while (Length < n) {
-    Length <<= 1;
+  while ((1 << Length) < n) {
+    Length += 1;
   }
   SOPSolve::solve(n);
   return 0;
