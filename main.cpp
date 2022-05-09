@@ -8,7 +8,7 @@ struct Literal {
 struct AndClause {
   bool isZero = false;
   std::set<Literal> andLiterals;
-  void mulClause(AndClause &b) {
+  void mulClause(const AndClause &b) {
     if (isZero || b.isZero) {
       isZero = true;
     }
@@ -26,19 +26,66 @@ struct AndClause {
   }
   // void addCaluse(AndClause &b) {}
 };
+
+struct OrClause {
+  bool isOne = false;
+  std::set<Literal> orLiterals;
+  void addClause(OrClause &b) {
+    if (isOne || b.isOne) {
+      isOne = true;
+      return;
+    }
+    for (auto &l : b.orLiterals) {
+      if (orLiterals.count(l)) {
+        auto itr = orLiterals.find(l);
+        if (l.state != itr->state) {
+          isOne = true;
+          break;
+        }
+      } else {
+        orLiterals.insert(l);
+      }
+    }
+  }
+  // void addCaluse(AndClause &b) {}
+};
+
+struct CNF {
+  std::vector<OrClause> mulOfClause;
+  void mulCaluse(OrClause &b) { mulOfClause.push_back(b); }
+  void mulCaluse(CNF &b) {
+    mulOfClause.insert(mulOfClause.end(), b.mulOfClause.begin(),
+                       b.mulOfClause.end());
+  }
+  void addClause(OrClause &b) {
+    for (auto &clause : mulOfClause) {
+      clause.addClause(b);
+    }
+  }
+  void addClause(CNF &b) {
+    std::vector<OrClause> res;
+    for (auto &clause : b.mulOfClause) {
+      CNF t;
+      t.mulOfClause = this->mulOfClause;
+      t.addClause(clause);
+      res.insert(res.end(), t.mulOfClause.begin(), t.mulOfClause.end());
+    }
+    mulOfClause = res;
+  }
+};
 struct SOP {
   std::vector<AndClause> sumOfClause;
-  void addCaluse(AndClause &b) { sumOfClause.push_back(b); }
-  void addCaluse(SOP &b) {
+  void addCaluse(const AndClause &b) { sumOfClause.push_back(b); }
+  void addCaluse(const SOP &b) {
     sumOfClause.insert(sumOfClause.end(), b.sumOfClause.begin(),
                        b.sumOfClause.end());
   }
-  void mulClause(AndClause &b) {
+  void mulClause(const AndClause &b) {
     for (auto &clause : sumOfClause) {
       clause.mulClause(b);
     }
   }
-  void mulClause(SOP &b) {
+  void mulClause(const SOP &b) {
     std::vector<AndClause> res;
     for (auto &clause : b.sumOfClause) {
       SOP t;
@@ -71,7 +118,7 @@ AndClause numberToAndClause(int number, int literal_start) {
   return res;
 }
 
-SOP getBlockConstraint(Step &step) {
+SOP getBlockConstraint(const Step &step) {
   SOP res;
   for (auto v : valid_list) {
     res.addCaluse(numberToAndClause(v, step.startID));
@@ -79,13 +126,13 @@ SOP getBlockConstraint(Step &step) {
   return res;
 }
 
-SOP getTransConstraint(Step &step_a, Step &step_b) {
+SOP getTransConstraint(const Step &step_a, const Step &step_b) {
   SOP res;
-  int dx = {};
-  int dy = {};
+  int dx[] = {0, 1, 0, -1};
+  int dy[] = {1, 0, -1, 0};
   for (auto v : valid_list) {
-    int xx = valid_list % n;
-    int yy = valid_list / n;
+    int xx = v % n;
+    int yy = v / n;
     for (int i = 0; i < 4; i++) {
       int n_xx = xx + dx[i];
       int n_yy = yy + dy[i];
@@ -105,16 +152,16 @@ SOP getTransConstraint(Step &step_a, Step &step_b) {
 SOP getKthSop(int k) {
   std::vector<Step> step_list(k);
   for (int i = 0; i < k; i++) {
-    step[i].startID = i * Length;
-    step[i].endID = (i + 1) * Length - 1;
+    step_list[i].startID = i * Length;
+    step_list[i].endID = (i + 1) * Length - 1;
   }
   SOP res_1 = getBlockConstraint(step_list[0]);
   for (int i = 1; i < k; i++) {
     res_1.mulClause(getBlockConstraint(step_list[i]));
   }
-  SOP res_2 = getBlockConstraint(step_list[0], step_list[1]);
+  SOP res_2 = getTransConstraint(step_list[0], step_list[1]);
   for (int i = 1; i < k - 1; i++) {
-    res_2.mulClause(getTransConstraint(step_list[i]));
+    res_2.mulClause(getTransConstraint(step_list[i], step_list[i + 1]));
   }
   res_1.mulClause(res_2);
 }
@@ -137,9 +184,9 @@ int main() {
     }
     getchar();
   }
-  L = 1;
-  while (L < n) {
-    L <<= 1;
+  Length = 1;
+  while (Length < n) {
+    Length <<= 1;
   }
   solve(n);
   return 0;
