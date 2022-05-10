@@ -164,7 +164,10 @@ struct GateNetwork {
   int root;
   int maxLiteralID = 0;
   std::vector<Node> nodes;
-
+  void init() {
+    nodes.clear();
+    root = v = maxLiteralID = 0;
+  }
   int addSonGate(GateNode g, int fa) {
     Node t;
     t.fa = fa;
@@ -174,6 +177,7 @@ struct GateNetwork {
     if (fa != t.idx) {
       nodes[t.fa].sons.push_back(t.idx);
     }
+    nodes.push_back(t);
     return v - 1;
   }
   void addInputLiterals(std::vector<Literal> literals, int fa) {

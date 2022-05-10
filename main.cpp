@@ -219,6 +219,7 @@ void printCNF(const CNF &s) {
 void solve(int n) {
   k = 2 * (n - 1);
   while (k < n * n) {
+    G.init();
     CNF s = getKthCNF(k);
     printCNF(s);
   }
