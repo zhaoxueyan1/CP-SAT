@@ -144,6 +144,9 @@ struct Step {
 enum class kGateType { kOR, kAND, kXNOR };
 
 struct GateNode {
+  GateNode() = default;
+  GateNode(kGateType g_type) : type(g_type) {}
+  GateNode(Literal l) : literal(l), isLiteral(true) {}
   kGateType type;
   bool isLiteral = false;
   Literal literal;

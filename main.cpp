@@ -1,11 +1,11 @@
 #include "GateNetwork.h"
 #include <bits/stdc++.h>
 
+using namespace GN;
 bool block_map[100][100];
 std::set<int> valid_list;
 int Length, n, k;
-
-using namespace GN;
+GateNetwork G;
 #if 0
 namespace SOPSolve {
 AndClause numberToAndClause(int number, int literal_start) {
@@ -112,6 +112,21 @@ CNF getBlockConstraint(const Step &step) {
   }
   return res;
 }
+void addBlockConstraint(const Step &step, int fa) {
+  int or_id = G.addSonGate(GateNode(kGateType::kOR), fa);
+
+  for (auto v : valid_list) {
+    int and_id = G.addSonGate(GateNode(kGateType::kAND), or_id);
+    std::vector<Literal> and_literals;
+    CNF c = numberToOrClause(v, step.startID);
+    for (auto &clause : c.mulOfClause) {
+      for (auto l : clause.orLiterals) {
+        and_literals.push_back(l);
+      }
+    }
+    G.addInputLiterals(and_literals, and_id);
+  }
+}
 
 CNF getTransConstraint(const Step &step_a, const Step &step_b) {
   CNF res;
@@ -136,21 +151,55 @@ CNF getTransConstraint(const Step &step_a, const Step &step_b) {
   return res;
 }
 
+void addTransConstraint(const Step &step_a, const Step &step_b, int fa) {
+  int or_id = G.addSonGate(GateNode(kGateType::kOR), fa);
+  int dx[] = {0, 1, 0, -1};
+  int dy[] = {1, 0, -1, 0};
+  for (auto v : valid_list) {
+    int xx = v % n;
+    int yy = v / n;
+    for (int i = 0; i < 4; i++) {
+      int n_xx = xx + dx[i];
+      int n_yy = yy + dy[i];
+      int n_v = n_yy * n + n_xx;
+      if (0 <= n_xx && n_xx < n && 0 <= n_yy && n_yy < n &&
+          valid_list.count(n_v)) {
+        int and_id = G.addSonGate(GateNode(kGateType::kAND), or_id);
+        std::vector<Literal> and_literals;
+        // CNF c = numberToOrClause(v, step.startID);
+        CNF c = numberToOrClause(v, step_a.startID);
+        CNF b = numberToOrClause(n_v, step_b.startID);
+        c.mulClause(b);
+        for (auto &clause : c.mulOfClause) {
+          for (auto l : clause.orLiterals) {
+            and_literals.push_back(l);
+          }
+        }
+        G.addInputLiterals(and_literals, and_id);
+      }
+    }
+  }
+}
+
 CNF getKthCNF(int k) {
   std::vector<Step> step_list(k);
+  int root_id = G.addSonGate(GateNode(kGateType::kAND), 0);
   for (int i = 0; i < k; i++) {
     step_list[i].startID = i * Length;
     step_list[i].endID = (i + 1) * Length - 1;
   }
-  CNF res_1 = getBlockConstraint(step_list[0]);
-  for (int i = 1; i < k; i++) {
-    res_1.mulClause(getBlockConstraint(step_list[i]));
+
+  int block_and_id = G.addSonGate(GateNode(kGateType::kAND), root_id);
+  for (int i = 0; i < k; i++) {
+    addBlockConstraint(step_list[i], block_and_id);
   }
-  CNF res_2 = getTransConstraint(step_list[0], step_list[1]);
-  for (int i = 1; i < k - 1; i++) {
-    res_2.mulClause(getTransConstraint(step_list[i], step_list[i + 1]));
+  // CNF res_2 = getTransConstraint(step_list[0], step_list[1]);
+  int trans_and_id = G.addSonGate(GateNode(kGateType::kAND), root_id);
+  for (int i = 0; i < k - 1; i++) {
+    addTransConstraint(step_list[i], step_list[i + 1], trans_and_id);
   }
-  res_1.mulClause(res_2);
+  G.tseitinTransform(0, Literal());
+  // res_1.mulClause(res_2);
 }
 
 void printCNF(const CNF &s) {
