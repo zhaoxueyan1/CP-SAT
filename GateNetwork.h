@@ -14,7 +14,12 @@ namespace GN {
 
 struct Literal {
   int idx;
-  char state;
+  bool state = true;
+  Literal getNeg() {
+    Literal res = *this;
+    res.state = !state;
+    return res;
+  }
   bool operator<(const Literal &b) const { return idx < b.idx; }
 };
 
@@ -52,7 +57,6 @@ struct OrClause {
       auto itr = orLiterals.find(b);
       if (b.state != itr->state) {
         isOne = true;
-        break;
       }
     } else {
       orLiterals.insert(b);
@@ -137,17 +141,6 @@ struct Step {
   int endID;
 };
 
-struct Literal {
-  int idx;
-  bool state = true;
-  Literal getNeg() {
-    Literal res = *this;
-    res.state = !state;
-    return res;
-  }
-  bool operator<(const Literal &b) const { return idx < b.idx; }
-};
-
 enum class kGateType { kOR, kAND, kXNOR };
 
 struct GateNode {
@@ -216,7 +209,7 @@ struct GateNetwork {
         res.mulClause(tseitinTransform(son_id, n_l, true));
       }
     }
-    switch (n_v.type) {
+    switch (n_v.gate.type) {
     case kGateType::kOR: {
       // right clause
       Literal neg_pre_literal = pre_literal.getNeg();

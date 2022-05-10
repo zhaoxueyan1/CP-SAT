@@ -1,10 +1,12 @@
+#include "GateNetwork.h"
 #include <bits/stdc++.h>
 
 bool block_map[100][100];
 std::set<int> valid_list;
-int Length;
-int n;
-int k;
+int Length, n, k;
+
+using namespace GN;
+#if 0
 namespace SOPSolve {
 AndClause numberToAndClause(int number, int literal_start) {
   AndClause res;
@@ -86,6 +88,7 @@ SOP solve(int n) {
 }
 
 }; // namespace SOPSolve
+#endif
 namespace CNFSolve {
 
 // CNF tseitinFor
@@ -150,22 +153,25 @@ CNF getKthCNF(int k) {
   res_1.mulClause(res_2);
 }
 
+void printCNF(const CNF &s) {
+  int i = 0;
+  for (auto &vec : s.mulOfClause) {
+    int j = 0;
+    for (auto &l : vec.orLiterals) {
+      if (l.state == 0) {
+        printf("not ");
+      }
+      printf("x%d %s", l.idx, (j++) == vec.orLiterals.size() - 1 ? ")" : "or ");
+    }
+    printf("%s", (i++) == s.mulOfClause.size() - 1 ? "\n" : "and ");
+  }
+}
+
 void solve(int n) {
   k = 2 * (n - 1);
   while (k < n * n) {
     CNF s = getKthCNF(k);
-    int i = 0;
-    for (auto &vec : s.mulOfClause) {
-      int j = 0;
-      for (auto &l : vec.orLiterals) {
-        if (l.state == 0) {
-          printf("not ");
-        }
-        printf("x%d %s", l.idx,
-               (j++) == vec.orLiterals.size() - 1 ? ")" : "or ");
-      }
-      printf("%s", (i++) == s.mulOfClause.size() - 1 ? "\n" : "and ");
-    }
+    printCNF(s);
   }
 }
 
@@ -188,6 +194,6 @@ int main() {
   while ((1 << Length) < n) {
     Length += 1;
   }
-  SOPSolve::solve(n);
+  CNFSolve::solve(n);
   return 0;
 }
