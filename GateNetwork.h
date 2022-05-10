@@ -43,6 +43,21 @@ struct AndClause {
 struct OrClause {
   bool isOne = false;
   std::set<Literal> orLiterals;
+  void addLiteral(const Literal &b) {
+    if (isOne) {
+      isOne = true;
+      return;
+    }
+    if (orLiterals.count(b)) {
+      auto itr = orLiterals.find(b);
+      if (b.state != itr->state) {
+        isOne = true;
+        break;
+      }
+    } else {
+      orLiterals.insert(b);
+    }
+  }
   void addClause(const OrClause &b) {
     if (isOne || b.isOne) {
       isOne = true;
@@ -125,6 +140,11 @@ struct Step {
 struct Literal {
   int idx;
   bool state = true;
+  Literal getNeg() {
+    Literal res = *this;
+    res.state = !state;
+    return res;
+  }
   bool operator<(const Literal &b) const { return idx < b.idx; }
 };
 
@@ -170,13 +190,21 @@ struct GateNetwork {
     }
   }
 
-  CNF tseitinTransform(int idx) {
+  CNF tseitinTransform(int idx, Literal pre_literal,
+                       bool need_tseitin = false) {
     CNF res;
     Node &n_v = nodes[idx];
     if (n_v.gate.isLiteral) {
-      res.addClause(c);
-      return v;
+      // res.addClause(c);
+      return res;
     }
+    if (need_tseitin == false && n_v.gate.type != kGateType::kAND) {
+      Literal n_l;
+      n_l.idx = ++maxLiteralID;
+      need_tseitin = true;
+      pre_literal = n_l;
+    }
+
     std::vector<Literal> son_literals;
     for (auto son_id : n_v.sons) {
       Node &son_v = nodes[son_id];
@@ -185,15 +213,57 @@ struct GateNetwork {
       } else {
         Literal n_l;
         n_l.idx = ++maxLiteralID;
-        res.mulClause(tseitinTransform(son_id));
+        res.mulClause(tseitinTransform(son_id, n_l, true));
       }
     }
     switch (n_v.type) {
     case kGateType::kOR: {
-      break;
+      // right clause
+      Literal neg_pre_literal = pre_literal.getNeg();
+      OrClause c_l;
+      c_l.addLiteral(neg_pre_literal);
+      for (auto son_literal : son_literals) {
+        c_l.addLiteral(son_literal);
+
+        Literal neg_son = son_literal.getNeg();
+        OrClause c_r_i;
+        c_r_i.addLiteral(pre_literal);
+        c_r_i.addLiteral(neg_son);
+        res.mulClause(c_r_i);
+      }
+      res.mulClause(c_l);
+      return res;
     }
     case kGateType::kAND: {
-      break;
+
+      // don't need tseitin transformation
+      if (!need_tseitin) {
+        for (auto son_literal : son_literals) {
+          OrClause c_l_i;
+          c_l_i.addLiteral(son_literal);
+          res.mulClause(c_l_i);
+        }
+        return res;
+      }
+
+      // need transformation
+      Literal neg_pre_literal = pre_literal.getNeg();
+      // right clause
+      OrClause c_r;
+      c_r.addLiteral(pre_literal);
+
+      // left clause
+      for (auto son_literal : son_literals) {
+        Literal neg_son = son_literal.getNeg();
+        // neg_son.state = !son_literal.state;
+        c_r.addLiteral(neg_son);
+        OrClause c_l_i;
+        c_l_i.addLiteral(neg_pre_literal);
+        c_l_i.addLiteral(son_literal);
+        res.mulClause(c_l_i);
+      }
+      res.mulClause(c_r);
+      return res;
     }
     case kGateType::kXNOR: {
       break;
