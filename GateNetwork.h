@@ -124,7 +124,7 @@ struct Step {
 
 struct Literal {
   int idx;
-  char state;
+  bool state = true;
   bool operator<(const Literal &b) const { return idx < b.idx; }
 };
 
@@ -133,7 +133,7 @@ enum class kGateType { kOR, kAND, kXNOR };
 struct GateNode {
   kGateType type;
   bool isLiteral = false;
-  Literal l;
+  Literal literal;
 };
 
 struct Node {
@@ -143,10 +143,10 @@ struct Node {
   std::vector<int> sons;
 };
 
-struct Graph {
+struct GateNetwork {
   int v;
   int root;
-  int maxLiteralID;
+  int maxLiteralID = 0;
   std::vector<Node> nodes;
 
   int addSonGate(GateNode g, int fa) {
@@ -154,6 +154,7 @@ struct Graph {
     t.fa = fa;
     t.idx = v++;
     t.gate = g;
+    maxLiteralID = std::max(maxLiteralID, g.literal.idx);
     if (fa != t.idx) {
       nodes[t.fa].sons.push_back(t.idx);
     }
@@ -164,21 +165,39 @@ struct Graph {
       /* code */
       GateNode t;
       t.isLiteral = true;
-      t.l = l;
+      t.literal = l;
       addSonGate(t, fa);
     }
   }
+
   CNF tseitinTransform(int idx) {
     CNF res;
-    GateNode n_v = nodes[idx];
-    if (n_v.isLiteral) {
+    Node &n_v = nodes[idx];
+    if (n_v.gate.isLiteral) {
       res.addClause(c);
       return v;
     }
+    std::vector<Literal> son_literals;
+    for (auto son_id : n_v.sons) {
+      Node &son_v = nodes[son_id];
+      if (son_v.gate.isLiteral) {
+        son_literals.push_back(son_v.gate.literal);
+      } else {
+        Literal n_l;
+        n_l.idx = ++maxLiteralID;
+        res.mulClause(tseitinTransform(son_id));
+      }
+    }
     switch (n_v.type) {
-    case /* constant-expression */:
-      /* code */
+    case kGateType::kOR: {
       break;
+    }
+    case kGateType::kAND: {
+      break;
+    }
+    case kGateType::kXNOR: {
+      break;
+    }
 
     default:
       break;
