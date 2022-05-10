@@ -1,0 +1,3 @@
+[submodule "mockturtle"]
+	path = mockturtle
+	url = git@github.com:zhaoxueyan1/mockturtle.git
