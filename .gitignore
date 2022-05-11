@@ -128,3 +128,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/bench/1.out
+/bench/2.out

@@ -47,6 +47,11 @@ struct AndClause {
 
 struct OrClause {
   bool isOne = false;
+  OrClause() {}
+  OrClause(const OrClause &b) {
+    orLiterals = b.orLiterals;
+    isOne = b.isOne;
+  }
   std::set<Literal> orLiterals;
   void addLiteral(const Literal &b) {
     if (isOne) {
@@ -173,7 +178,9 @@ struct GateNetwork {
     t.fa = fa;
     t.idx = v++;
     t.gate = g;
-    maxLiteralID = std::max(maxLiteralID, g.literal.idx);
+    if (g.isLiteral) {
+      maxLiteralID = std::max(maxLiteralID, g.literal.idx);
+    }
     if (fa != t.idx) {
       nodes[t.fa].sons.push_back(t.idx);
     }
@@ -183,6 +190,7 @@ struct GateNetwork {
   void addInputLiterals(std::vector<Literal> literals, int fa) {
     for (auto &l : literals) {
       /* code */
+      // maxLiteralID = std::max(maxLiteralID, l.idx);
       GateNode t;
       t.isLiteral = true;
       t.literal = l;
@@ -214,6 +222,7 @@ struct GateNetwork {
         Literal n_l;
         n_l.idx = ++maxLiteralID;
         res.mulClause(tseitinTransform(son_id, n_l, true));
+        son_literals.push_back(n_l);
       }
     }
     switch (n_v.gate.type) {

@@ -198,7 +198,7 @@ CNF getKthCNF(int k) {
   for (int i = 0; i < k - 1; i++) {
     addTransConstraint(step_list[i], step_list[i + 1], trans_and_id);
   }
-  G.tseitinTransform(0, Literal());
+  return G.tseitinTransform(0, Literal());
   // res_1.mulClause(res_2);
 }
 
@@ -206,22 +206,27 @@ void printCNF(const CNF &s) {
   int i = 0;
   for (auto &vec : s.mulOfClause) {
     int j = 0;
+    printf("( ");
     for (auto &l : vec.orLiterals) {
       if (l.state == 0) {
         printf("not ");
       }
       printf("x%d %s", l.idx, (j++) == vec.orLiterals.size() - 1 ? ")" : "or ");
     }
-    printf("%s", (i++) == s.mulOfClause.size() - 1 ? "\n" : "and ");
+    if ((i++) != s.mulOfClause.size() - 1) {
+      printf("and \n");
+    }
   }
+  printf("\n");
 }
 
 void solve(int n) {
-  k = 2 * (n - 1);
+  k = n * n - 1;
   while (k < n * n) {
     G.init();
     CNF s = getKthCNF(k);
     printCNF(s);
+    k++;
   }
 }
 
@@ -229,6 +234,7 @@ void solve(int n) {
 int main() {
   std::string file_name = "./bench/1.in";
   freopen(file_name.c_str(), "r", stdin);
+  freopen("./bench/2.out", "w", stdout);
   scanf("%d", &n);
   getchar();
   for (int i = 0; i < n; ++i) {
