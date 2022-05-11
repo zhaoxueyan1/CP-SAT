@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum { END = -9, UNSAT = 0, SAT = 1, MARK = 2, IMPLIED = 6 };
 
@@ -412,14 +413,43 @@ int parse(struct solver *S,
   return SAT;
 } // Return that no conflict was observed
 
+// Print the model if satisfiable
+void print_model(struct solver *S) {
+  int n = 10;
+  int literal_num = 7;
+  int k = 100;
+  char buffer[32];
+  size_t current_lit_len;
+  // Count the number of characters in the line
+  unsigned int line_count = 2;
+  int MAX_LINE_LEN = 1;
+  printf("v ");
+  int end_i = S->nVars / literal_num > k ? S->nVars / literal_num : k;
+  for (int i = 0; i < end_i; i++) {
+    int start_literal = i * literal_num;
+    for (int j = 0; j < literal_num; j++) {
+      int m = start_literal + j;
+      buffer[j] = S->model[m] + '0';
+    }
+    buffer[literal_num + 1] = 0;
+    int num = atoi(buffer);
+    int xx = num % n;
+    int yy = num / n;
+    printf("(x:%d ,y:%d)", xx, yy);
+    printf("\n");
+  }
+}
+
 int main(int argc, char **argv) { // The main procedure for a STANDALONE solver
   struct solver S;                // Create the solver datastructure
   if (parse(&S, argv[1]) == UNSAT)
     printf("s UNSATISFIABLE\n"); // Parse the DIMACS file in argv[1]
   else if (solve(&S) == UNSAT)
     printf("s UNSATISFIABLE\n"); // Solve without limit (number of conflicts)
-  else
+  else {
+    print_model(&S);
     printf("s SATISFIABLE\n"); // And print whether the formula has a solution
+  }
   printf("c statistics of %s: mem: %i conflicts: %i max_lemmas: %i\n", argv[1],
          S.mem_used, S.nConflicts, S.maxLemmas);
 }

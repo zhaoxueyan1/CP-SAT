@@ -114,7 +114,14 @@ CNF getBlockConstraint(const Step &step) {
 }
 void addBlockConstraint(const Step &step, int fa) {
   int or_id = G.addSonGate(GateNode(kGateType::kOR), fa);
-
+  std::set<int> v_list = valid_list;
+  if (step.idx == 0) {
+    v_list.clear();
+    v_list.insert(0);
+  } else if (step.idx == k - 1) {
+    v_list.clear();
+    v_list.insert(n * n - 1);
+  }
   for (auto v : valid_list) {
     int and_id = G.addSonGate(GateNode(kGateType::kAND), or_id);
     std::vector<Literal> and_literals;
@@ -181,10 +188,11 @@ void addTransConstraint(const Step &step_a, const Step &step_b, int fa) {
   }
 }
 
-CNF getKthCNF(int k) {
+CNF getKthCNF() {
   std::vector<Step> step_list(k);
   int root_id = G.addSonGate(GateNode(kGateType::kAND), 0);
   for (int i = 0; i < k; i++) {
+    step_list[i].idx = i;
     step_list[i].startID = i * Length;
     step_list[i].endID = (i + 1) * Length - 1;
   }
@@ -241,7 +249,7 @@ void solve(int n) {
   k = n * n - 1;
   while (k < n * n) {
     G.init();
-    CNF s = getKthCNF(k);
+    CNF s = getKthCNF();
     printDIMACS(s);
     k++;
   }
@@ -263,7 +271,7 @@ int main() {
     getchar();
   }
   Length = 1;
-  while ((1 << Length) < n) {
+  while ((1 << Length) < n * n) {
     Length += 1;
   }
   CNFSolve::solve(n);

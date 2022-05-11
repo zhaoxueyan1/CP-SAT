@@ -142,6 +142,7 @@ struct SOP {
 };
 
 struct Step {
+  int idx;
   int startID;
   int endID;
 };
