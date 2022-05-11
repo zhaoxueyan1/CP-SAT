@@ -254,15 +254,16 @@ void solve(int n) {
     CNF s = getKthCNF();
     printDIMACS(s);
     k++;
+    break;
   }
 }
 }; // namespace CNFSolve
 
 int main() {
-  std::string file_name = "./bench/3.in";
+  std::string file_name = "./bench/2.in";
   auto old = stdout;
   freopen(file_name.c_str(), "r", stdin);
-  freopen("./bench/3.out", "w", stdout);
+  freopen("./bench/2.out", "w", stdout);
   scanf("%d", &n);
   getchar();
   for (int i = 0; i < n; ++i) {
@@ -281,7 +282,7 @@ int main() {
     Length += 1;
   }
   CNFSolve::solve(n);
-  freopen("./bench/3.args", "w", stdout);
+  freopen("./bench/2.args", "w", stdout);
   printf("%d %d %d\n", n, 2 * n - 1, Length);
   return 0;
 }

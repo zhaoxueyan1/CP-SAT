@@ -413,13 +413,14 @@ int parse(struct solver *S,
   return SAT;
 } // Return that no conflict was observed
 
+#if 1
 // Print the model if satisfiable
 void print_model(struct solver *S) {
 
   int n = 2;
   int literal_num = 2;
   int k = 3;
-  freopen("./bench/3.args", "r", stdin);
+  freopen("./bench/2.args", "r", stdin);
   scanf("%d %d %d", &n, &k, &literal_num);
   char buffer[32];
   size_t current_lit_len;
@@ -428,18 +429,60 @@ void print_model(struct solver *S) {
   int MAX_LINE_LEN = 1;
   printf("v ");
   int end_i = S->nVars / literal_num > k ? k : S->nVars / literal_num;
+  // for (int i = 0; i < S->nVars; i++) {
+  //   int start_literal = i * literal_num + 1;
+  //   int num = 0;
+  //   for (int j = 0; j < literal_num; j++) {
+  //     int m = start_literal + j;
+  //     num = num + (S->model[m] << j);
+  //   }
+  //   int xx = num % n;
+  //   int yy = num / n;
+  //   printf("(x:%d ,y:%d)", xx, yy);
+  //   printf("\n");
+  // }
   for (int i = 0; i < end_i; i++) {
     int start_literal = i * literal_num;
     int num = 0;
     for (int j = 0; j < literal_num; j++) {
       int m = start_literal + j + 1;
-      num = ((num << 1) + S->model[m]);
+      num = num + (S->model[m] << j);
     }
     int xx = num % n;
     int yy = num / n;
     printf("(x:%d ,y:%d)", xx, yy);
     printf("\n");
   }
+}
+
+#endif
+#define MAX_LINE_LEN 80
+
+// Print the model if satisfiable
+void print_model2(struct solver *S) {
+  char buffer[32];
+  size_t current_lit_len;
+  // Count the number of characters in the line
+  unsigned int line_count = 2;
+  printf("v ");
+  for (int i = 1; i <= S->nVars; i++) {
+    sprintf(buffer, "%d", (S->model[i] ? i : -i));
+    current_lit_len = strlen(buffer);
+    // If max length is exceeded
+    if (current_lit_len + line_count > MAX_LINE_LEN) {
+      // Including the 'v ' and space after literal
+      line_count = current_lit_len + 3;
+      printf("\nv %s ", buffer);
+    } else {
+      line_count += current_lit_len + 1;
+      printf("%s", buffer);
+      // If there is remaining length for a space
+      if (current_lit_len + line_count + 1 <= MAX_LINE_LEN) {
+        printf(" ");
+      }
+    }
+  }
+  printf("\n");
 }
 
 int main(int argc, char **argv) { // The main procedure for a STANDALONE solver
@@ -450,6 +493,7 @@ int main(int argc, char **argv) { // The main procedure for a STANDALONE solver
     printf("s UNSATISFIABLE\n"); // Solve without limit (number of conflicts)
   else {
     print_model(&S);
+    // print_model2(&S);
     printf("s SATISFIABLE\n"); // And print whether the formula has a solution
   }
   printf("c statistics of %s: mem: %i conflicts: %i max_lemmas: %i\n", argv[1],
