@@ -415,24 +415,26 @@ int parse(struct solver *S,
 
 // Print the model if satisfiable
 void print_model(struct solver *S) {
-  int n = 10;
-  int literal_num = 7;
-  int k = 100;
+
+  int n = 2;
+  int literal_num = 2;
+  int k = 3;
+  freopen("./bench/3.args", "r", stdin);
+  scanf("%d %d %d", &n, &k, &literal_num);
   char buffer[32];
   size_t current_lit_len;
   // Count the number of characters in the line
   unsigned int line_count = 2;
   int MAX_LINE_LEN = 1;
   printf("v ");
-  int end_i = S->nVars / literal_num > k ? S->nVars / literal_num : k;
+  int end_i = S->nVars / literal_num > k ? k : S->nVars / literal_num;
   for (int i = 0; i < end_i; i++) {
     int start_literal = i * literal_num;
+    int num = 0;
     for (int j = 0; j < literal_num; j++) {
-      int m = start_literal + j;
-      buffer[j] = S->model[m] + '0';
+      int m = start_literal + j + 1;
+      num = ((num << 1) + S->model[m]);
     }
-    buffer[literal_num + 1] = 0;
-    int num = atoi(buffer);
     int xx = num % n;
     int yy = num / n;
     printf("(x:%d ,y:%d)", xx, yy);

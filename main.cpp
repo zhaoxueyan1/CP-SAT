@@ -122,7 +122,7 @@ void addBlockConstraint(const Step &step, int fa) {
     v_list.clear();
     v_list.insert(n * n - 1);
   }
-  for (auto v : valid_list) {
+  for (auto v : v_list) {
     int and_id = G.addSonGate(GateNode(kGateType::kAND), or_id);
     std::vector<Literal> and_literals;
     CNF c = numberToOrClause(v, step.startID);
@@ -150,8 +150,8 @@ CNF getTransConstraint(const Step &step_a, const Step &step_b) {
           valid_list.count(n_v)) {
         CNF a = numberToOrClause(v, step_a.startID);
         CNF b = numberToOrClause(n_v, step_b.startID);
-        a.addClause(b);
-        res.addClause(a);
+        a.mulClause(b);
+        res.mulClause(a);
       }
     }
   }
@@ -201,7 +201,6 @@ CNF getKthCNF() {
   for (int i = 0; i < k; i++) {
     addBlockConstraint(step_list[i], block_and_id);
   }
-  // CNF res_2 = getTransConstraint(step_list[0], step_list[1]);
   int trans_and_id = G.addSonGate(GateNode(kGateType::kAND), root_id);
   for (int i = 0; i < k - 1; i++) {
     addTransConstraint(step_list[i], step_list[i + 1], trans_and_id);
@@ -233,6 +232,9 @@ void printDIMACS(const CNF &s) {
   printf("p cnf %d %d\n", n_literals, s.mulOfClause.size());
   int i = 0;
   for (auto &vec : s.mulOfClause) {
+    if (vec.isOne) {
+      continue;
+    }
     int j = 0;
     // printf("( ");
     for (auto &l : vec.orLiterals) {
@@ -246,19 +248,21 @@ void printDIMACS(const CNF &s) {
 }
 
 void solve(int n) {
-  k = n * n - 1;
+  k = 2 * n - 1;
   while (k < n * n) {
-    G.init();
+    G.init(k * Length - 1);
     CNF s = getKthCNF();
     printDIMACS(s);
     k++;
   }
 }
 }; // namespace CNFSolve
+
 int main() {
-  std::string file_name = "./bench/1.in";
+  std::string file_name = "./bench/3.in";
+  auto old = stdout;
   freopen(file_name.c_str(), "r", stdin);
-  freopen("./bench/1.out", "w", stdout);
+  freopen("./bench/3.out", "w", stdout);
   scanf("%d", &n);
   getchar();
   for (int i = 0; i < n; ++i) {
@@ -270,10 +274,14 @@ int main() {
     }
     getchar();
   }
+  // freopen("/dev/console", "w", stdout);
+  stdout = old;
   Length = 1;
   while ((1 << Length) < n * n) {
     Length += 1;
   }
   CNFSolve::solve(n);
+  freopen("./bench/3.args", "w", stdout);
+  printf("%d %d %d\n", n, 2 * n - 1, Length);
   return 0;
 }

@@ -170,9 +170,10 @@ struct GateNetwork {
   int root;
   int maxLiteralID = 0;
   std::vector<Node> nodes;
-  void init() {
+  void init(int max_literal_id) {
     nodes.clear();
-    root = v = maxLiteralID = 0;
+    root = v = 0;
+    maxLiteralID = max_literal_id;
   }
   int addSonGate(GateNode g, int fa) {
     Node t;
