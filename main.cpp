@@ -220,21 +220,37 @@ void printCNF(const CNF &s) {
   printf("\n");
 }
 
+void printDIMACS(const CNF &s) {
+  int n_literals = G.maxLiteralID + 1;
+  printf("p cnf %d %d\n", n_literals, s.mulOfClause.size());
+  int i = 0;
+  for (auto &vec : s.mulOfClause) {
+    int j = 0;
+    // printf("( ");
+    for (auto &l : vec.orLiterals) {
+      if (l.state == 0) {
+        printf("-");
+      }
+      printf("%d ", l.idx + 1);
+    }
+    printf("0\n");
+  }
+}
+
 void solve(int n) {
   k = n * n - 1;
   while (k < n * n) {
     G.init();
     CNF s = getKthCNF(k);
-    printCNF(s);
+    printDIMACS(s);
     k++;
   }
 }
-
 }; // namespace CNFSolve
 int main() {
   std::string file_name = "./bench/1.in";
   freopen(file_name.c_str(), "r", stdin);
-  freopen("./bench/2.out", "w", stdout);
+  freopen("./bench/1.out", "w", stdout);
   scanf("%d", &n);
   getchar();
   for (int i = 0; i < n; ++i) {
