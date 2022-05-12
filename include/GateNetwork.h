@@ -10,6 +10,8 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#pragma once
+
 namespace GN {
 
 struct Literal {
