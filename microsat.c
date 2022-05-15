@@ -1,5 +1,6 @@
 
 #include "microsat.h"
+#include "time.h"
 
 #define MAX_LINE_LEN 80
 
@@ -9,7 +10,7 @@ void print_model(struct solver *S) {
   int n = 2;
   int literal_num = 2;
   int k = 3;
-  freopen("./bench/2.args", "r", stdin);
+  freopen("./bench/1.args", "r", stdin);
   scanf("%d %d %d", &n, &k, &literal_num);
   char buffer[32];
   size_t current_lit_len;
@@ -61,15 +62,20 @@ void print_model2(struct solver *S) {
 
 int main(int argc, char **argv) { // The main procedure for a STANDALONE solver
   struct solver S;                // Create the solver datastructure
+  clock_t start_time, finish_time;
+  start_time = clock();
   if (parse(&S, argv[1]) == UNSAT)
     printf("s UNSATISFIABLE\n"); // Parse the DIMACS file in argv[1]
   else if (solve(&S) == UNSAT)
     printf("s UNSATISFIABLE\n"); // Solve without limit (number of conflicts)
   else {
-    print_model(&S);
+    // print_model(&S);
     // print_model2(&S);
     printf("s SATISFIABLE\n"); // And print whether the formula has a solution
   }
-  printf("c statistics of %s: mem: %i conflicts: %i max_lemmas: %i\n", argv[1],
-         S.mem_used, S.nConflicts, S.maxLemmas);
+  finish_time = clock();
+  printf(
+      "c statistics of %s: mem: %i conflicts: %i max_lemmas: %i time: %f s\n",
+      argv[1], S.mem_used, S.nConflicts, S.maxLemmas,
+      1. * (finish_time - start_time) / CLOCKS_PER_SEC);
 }

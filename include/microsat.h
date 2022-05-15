@@ -34,7 +34,7 @@ enum { END = -9, UNSAT = 0, SAT = 1, MARK = 2, IMPLIED = 6 };
 struct solver { // The variables in the struct are described in the initCDCL
                 // procedure
   int *DB, nVars, nClauses, mem_used, mem_fixed, mem_max, maxLemmas, nLemmas,
-      *buffer, nConflicts, *model, *reason, *falseStack, *false, *first,
+      *buffer, nConflicts, *model, *reason, *falseStack, *false, *first, *score,
       *forced, *processed, *assigned, *next, *prev, head, res, fast, slow;
 };
 
@@ -137,12 +137,23 @@ void bump(struct solver *S,
     S->false[lit] =
         MARK; // MARK the literal as involved if not a top-level unit
     int var = abs(lit);
+    S->score[var] = S->score[var] * 0.95 + 1; // add score
     if (var != S->head) { // In case var is not already the head of the list
-      S->prev[S->next[var]] = S->prev[var]; // Update the prev link, and
-      S->next[S->prev[var]] = S->next[var]; // Update the next link, and
-      S->next[S->head] = var;               // Add a next link to the head, and
-      S->prev[var] = S->head;
-      S->head = var;
+      if (S->score[var] >= S->score[S->head]) {
+        S->prev[S->next[var]] = S->prev[var]; // Update the prev link, and
+        S->next[S->prev[var]] = S->next[var]; // Update the next link, and
+        S->next[S->head] = var; // Add a next link to the head, and
+        S->prev[var] = S->head;
+        S->head = var;
+      } else {
+        int old_pre = S->prev[S->head];
+        S->prev[var] = old_pre; // Update the prev link, and
+        S->next[var] = S->head; // Update the next link, and
+        S->next[old_pre] = var;
+        S->prev[S->head] = var; // Add a next link to the head, and
+        // S->prev[var] = S->head;
+        // S->head = var;
+      }
     }
   }
 } // Make var the new head
@@ -249,8 +260,7 @@ int propagate(struct solver *S) {             // Performs unit propagation
         if (!S->false[clause[0]]) { // If the other watched literal is
                                     // falsified,
           assign(S, clause, forced);
-        } // A unit clause is found, and the reason is set
-        else {
+        } else { // A unit clause is found, and the reason is set
           if (forced)
             return UNSAT; // Found a root level conflict -> UNSAT
           int *lemma = analyze(
@@ -343,7 +353,7 @@ void initCDCL(struct solver *S, int n, int m) {
   S->first += n; // Offset of the first watched clause
   S->DB[S->mem_used++] =
       0; // Make sure there is a 0 before the clauses are loaded.
-
+  S->score = getMemory(S, n + 1);
   int i;
   for (i = 1; i <= n; i++) { // Initialize the main datastructures:
     S->prev[i] = i - 1;
@@ -351,6 +361,7 @@ void initCDCL(struct solver *S, int n, int m) {
     S->model[i] = S->false[-i] = S->false[i] =
         0; // the model (phase-saving), the false array,
     S->first[i] = S->first[-i] = END;
+    S->score[i] = 0;
   } // and first (watch pointers).
   S->head = n;
 } // Initialize the head of the double-linked list
