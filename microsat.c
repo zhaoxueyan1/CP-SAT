@@ -69,7 +69,7 @@ int main(int argc, char **argv) { // The main procedure for a STANDALONE solver
   else if (solve(&S) == UNSAT)
     printf("s UNSATISFIABLE\n"); // Solve without limit (number of conflicts)
   else {
-    // print_model(&S);
+    print_model(&S);
     // print_model2(&S);
     printf("s SATISFIABLE\n"); // And print whether the formula has a solution
   }
